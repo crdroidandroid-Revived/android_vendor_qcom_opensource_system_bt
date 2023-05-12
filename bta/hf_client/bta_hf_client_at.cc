@@ -332,6 +332,10 @@ static void bta_hf_client_handle_cind_list_item(tBTA_HF_CLIENT_CB* client_cb,
 
   APPL_TRACE_DEBUG("%s: %lu.%s <%lu:%lu>", __func__, index, name, min, max);
 
+  if (index >= BTA_HF_CLIENT_AT_INDICATOR_COUNT) {
+    return;
+  }
+
   /* look for a matching indicator on list of supported ones */
   for (i = 0; i < BTA_HF_CLIENT_AT_SUPPORTED_INDICATOR_COUNT; i++) {
     if (strcmp(name, BTA_HF_CLIENT_INDICATOR_SERVICE) == 0) {
@@ -783,9 +787,9 @@ void bta_hf_client_binp(tBTA_HF_CLIENT_CB* client_cb, char* number) {
   } while (0)
 
 /* skip rest of AT string up to <cr> */
-#define AT_SKIP_REST(buf)           \
-  do {                              \
-    while (*(buf) != '\r') (buf)++; \
+#define AT_SKIP_REST(buf)                             \
+  do {                                                \
+    while (*(buf) != '\r' && *(buf) != '\0') (buf)++; \
   } while (0)
 
 static char* bta_hf_client_parse_ok(tBTA_HF_CLIENT_CB* client_cb,
@@ -1611,9 +1615,14 @@ void bta_hf_client_at_parse(tBTA_HF_CLIENT_CB* client_cb, char* buf,
     bta_hf_client_at_parse_start(client_cb);
     bta_hf_client_at_clear_buf(client_cb);
 
-    /* recover cut data */
-    memcpy(client_cb->at_cb.buf, tmp_buff, tmp);
-    client_cb->at_cb.offset += tmp;
+    /* TODO: recover cut data */
+    // memcpy(client_cb->at_cb.buf, tmp_buff, tmp);
+    // client_cb->at_cb.offset += tmp;
+
+    // Observed SIGSEV issue in Defensics, when received buf is more than
+    // BTA_HF_CLIENT_AT_PARSER_MAX_LEN.
+    // Assuming to return from here, Once AT command is retrieved.
+    return;
   }
 
   memcpy(client_cb->at_cb.buf + client_cb->at_cb.offset, buf, len);
